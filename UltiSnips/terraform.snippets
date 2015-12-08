@@ -75,6 +75,25 @@ resource "aws_instance" "${1:name}" {
 }
 endsnippet
 
+snippet resource_route53_record "Resource for a route53 record"
+resource "aws_route53_record" "$2" {
+  zone_id = "$3"
+  name = "$4"
+  type = "$5"
+  ttl = "${6:300}"
+  records = $7
+}
+endsnippet
+
+snippet resource_template_file "Template file resource"
+resource "template_file" "$1" {
+  filename = "$1"
+  vars {
+    $2
+  }
+}
+endsnippet
+
 snippet resource_aws_eip
 resource "aws_eip" "${1:name}" {
   instance = "aws_instance.${2:$1}.id"
@@ -142,4 +161,32 @@ snippet tags
 tags {
   Name = "${2:value}"
 }
+endsnippet
+
+
+## funcs
+snippet lookup "Lookup function" w
+\$\{lookup(var.$1, $2)\}
+endsnippet
+
+
+#types
+snippet qvar "quoted variable"
+"\$\{var.$1\}"
+endsnippet
+
+snippet res "resouce as a variable" w
+\$\{$1.$2\}
+endsnippet
+
+snippet var "regular var" w
+\$\{var.$1\}
+endsnippet
+
+snippet arr "make a array"
+[ $1 ]
+endsnippet
+
+snippet =
+$1 = $2
 endsnippet
