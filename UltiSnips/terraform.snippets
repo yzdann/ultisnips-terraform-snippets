@@ -95,17 +95,17 @@ resource "aws_security_group" "${1:name}" {
   description = "${3:desc}"
 
   ingress {
-	  from_port = ${4:from_port}
-	  to_port = ${5:to_port}
-	  protocol = "${5:tcp}"
-	  cidr_blocks = ["${6:0.0.0.0/0}"]
+      from_port = ${4:from_port}
+      to_port = ${5:to_port}
+      protocol = "${5:tcp}"
+      cidr_blocks = ["${6:0.0.0.0/0}"]
   }
 
   egress {
-	  from_port = ${7:0}
-	  to_port = ${8:0}
-	  protocol = "${9:-1}"
-	  cidr_blocks = [${10:"0.0.0.0/0"}]
+      from_port = ${7:0}
+      to_port = ${8:0}
+      protocol = "${9:-1}"
+      cidr_blocks = [${10:"0.0.0.0/0"}]
   }
 }
 endsnippet
@@ -124,8 +124,8 @@ resource "aws_s3_bucket" "${1:name}" {
   policy = "${4:${file("policy.json")}}"
 
   website {
-	  index_document = "${5:index.html}"
-	  error_document = "${6:error.html}"
+      index_document = "${5:index.html}"
+      error_document = "${6:error.html}"
   }
 }
 endsnippet
