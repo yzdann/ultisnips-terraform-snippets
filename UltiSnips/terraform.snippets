@@ -22,9 +22,11 @@ terraform {
 endsnippet
 
 # variable
-snippet var "variable"
+snippet vari "variable"
 variable "${1:name}" {
-  ${2}
+	type = $2
+	default = $3
+	description = $4
 }
 endsnippet
 
