@@ -1,3 +1,15 @@
+# terraform
+snippet terraform "terraform required providers"
+terraform {
+  required_providers {
+    ${1:name} = {
+      source  = "${2:source}"
+      version = "${3:version}"
+    }
+  }
+}
+endsnippet
+
 # variable
 snippet var "variable"
 variable "${1:name}" {
