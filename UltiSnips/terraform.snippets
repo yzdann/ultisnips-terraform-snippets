@@ -117,14 +117,35 @@ resource "aws_subnet" "${1:name}" {
 }
 endsnippet
 
+snippet resource_route_table
+resource "aws_route_table" "${1:name}" {
+	vpc_id = "${aws_vpc.web_vpc.id}"
+	route {
+		cidr_block = $2 
+		gateway_id = "${aws_internet_gateway.${3:web_igw}.id}"
+	}
+	tags = {
+		Name = "${4:$1}"
+	}
+}
+endsnippet
+
+snippet resource_route_table_association
+resource "aws_route_table_association" "$1" {
+	subnet_id = "${aws_subnet.$2.id}"
+	route_table_id = "${aws_route_table.$3.id}"
+}
+endsnippet
+
 snippet resource_aws_instance
-	resource "aws_instance" "${1:name}" {
+resource "aws_instance" "${1:name}" {
 	provider = aws.${2:alias}
 	ami = "${3:ami-383c1956}"
 	instance_type = "${4:t2.micro}"
 	subnet_id     = aws_subnet.$5.id 
-	tags {
-		Name = "${6:$1}"
+	vpc_security_group_ids = ["${aws_security_group.$6.id}"]
+	tags = {
+		Name = "${7:$1}"
 	}
 }
 endsnippet
@@ -145,6 +166,57 @@ resource "template_file" "$1" {
 	filename = "$1"
 	vars {
 		$2
+	}
+}
+endsnippet
+
+snippet resource_aws_elb
+resource "aws_elb" "$1" {
+	provider = aws.${2:alias}
+	name = "${3:web-elb}"
+	subnets = ["${aws_subnet.${4:public_subnet}.*.id}"]
+	security_groups = ["${aws_security_group.${5:sg}.id}"]
+	instances = ["${aws_instance.${6:web_instance}.*.id}"]
+
+	# Listen for HTTP requests and distribute them to the instances
+	listener { 
+		instance_port     = 80
+		instance_protocol = "http"
+		lb_port           = 80
+		lb_protocol       = "http"
+	}
+
+	health_check {
+		healthy_threshold = 2
+		unhealthy_threshold = 2
+		timeout = 3
+		target = "HTTP:80/"
+		interval = 10
+	}
+}
+endsnippet
+
+snippet resource_aws_sg
+resource "aws_security_group" "$1" {
+	provider = aws.${2:alias}
+	name        = "${3:$1}"
+	description = "$4"
+	vpc_id      = "${aws_vpc.$5.id}"
+
+	ingress {
+		from_port   = $6
+		to_port     = $7
+		protocol    = "tcp"
+		cidr_blocks = ["${8:0.0.0.0/0}"]
+		security_groups = ["${aws_security_group.$9.id}"]
+	}
+
+	egress {
+		from_port = ${10:0} 
+		to_port = ${11:0} 
+		protocol = "${12:-1}"
+		cidr_blocks = ["${13:0.0.0.0/0}"]
+		security_groups = ["${aws_security_group.$10.id}"]
 	}
 }
 endsnippet
@@ -218,7 +290,7 @@ output "${1:name}" {
 endsnippet
 
 snippet tags
-tags {
+tags = {
 	Name = "${2:value}"
 }
 endsnippet
