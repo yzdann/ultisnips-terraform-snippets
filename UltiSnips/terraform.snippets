@@ -119,21 +119,23 @@ endsnippet
 
 snippet resource_route_table
 resource "aws_route_table" "${1:name}" {
-	vpc_id = "${aws_vpc.web_vpc.id}"
+	provider = aws.${2:alias}
+	vpc_id = "${aws_vpc.${3:web_vpc}.id}"
 	route {
-		cidr_block = $2 
-		gateway_id = "${aws_internet_gateway.${3:web_igw}.id}"
+		cidr_block = "${4:0.0.0.0/0}" 
+		gateway_id = "${aws_internet_gateway.${5:web_igw}.id}"
 	}
 	tags = {
-		Name = "${4:$1}"
+		Name = "${6:$1}"
 	}
 }
 endsnippet
 
 snippet resource_route_table_association
 resource "aws_route_table_association" "$1" {
-	subnet_id = "${aws_subnet.$2.id}"
-	route_table_id = "${aws_route_table.$3.id}"
+	provider = aws.${2:alias}
+	subnet_id = "${aws_subnet.$3.id}"
+	route_table_id = "${aws_route_table.$4.id}"
 }
 endsnippet
 
@@ -196,6 +198,97 @@ resource "aws_elb" "$1" {
 }
 endsnippet
 
+snippet resource_aws_lb
+resource "aws_lb" "$1" {
+	provider = aws.${2:alias}
+	name = "${3:$1}"
+	load_balancer_type = ${4:var.loadbalancer_type}
+	subnets = data.aws_subnet_ids.$5.ids
+	security_groups = [aws_security_group.$6.id]
+}
+endsnippet
+
+snippet resource_aws_lb_listener
+resource "aws_lb_listener" "$1" {
+	provider = aws.${2:alias}
+	load_balancer_arn = aws_lb.${3:loadbalancer}.arn
+	port = ${4:var.loadbalancer_type}
+	protocol = ${5:var.loadbalancer_protocol}
+
+	default_action {
+		type = "fixed-response"
+		fixed_response {
+			content_type = "text/plain"
+			message_body = "404: page not found"
+			status_code  = 404
+		}
+	}
+}
+endsnippet	
+
+snippet resource_aws_lb_target_group
+resource "aws_lb_target_group" "$1" {
+	provider = aws.${2:alias}
+	port = ${3:var.webserver_port}
+	protocol = ${4:var.loadbalancer_protocol}
+	vpc_id = data.aws_vpc.$5.id
+
+	health_check {
+		path = "${6:/}"
+		protocol = ${7:var.loadbalancer_protocol}
+		matcher = ${8:var.loadbalancer_health_check.matcher}
+		interval = ${9:var.loadbalancer_health_check.interval}
+		timeout = ${10:var.loadbalancer_health_check.timeout}
+		healthy_threshold  = ${11:var.loadbalancer_health_check.healthy_threshold}
+		unhealthy_threshold = ${12:var.loadbalancer_health_check.unhealthy_threshold}
+	}
+}
+endsnippet
+
+snippet resource_aws_lb_listener_rule
+resource "aws_lb_listener_rule" "$1" {
+	provider = aws.${2:alias}
+	listener_arn = aws_lb_listener.$3.arn
+	priority = $4 
+
+	condition {
+		path_pattern {
+			values = ["/"]
+		}
+	}
+
+	action {
+		type = "${4:forward}"
+		target_group_arn = aws_lb_target_group.$5.arn
+	}
+}
+endsnippet
+
+snippet resource_aws_launch_config
+resource "aws_launch_configuration" "$1" {
+	provider = aws.${2:alias}
+	image_id        = "$3"
+	instance_type   = ${4:t2.micro}
+	security_groups = [aws_security_group.$5.id]
+
+	user_data = $6
+
+	lifecycle {
+		${6:create_before_destroy = true}
+	}
+}
+endsnippet
+
+snippet resource_aws_autoscale_group
+resource "aws_autoscaling_group" "$1" {
+	provider = aws.${2:alias}
+	launch_configuration = aws_launch_configuration.$3.name
+	vpc_zone_identifier  = data.aws_subnet_ids.$4.ids
+	min_size = $5
+	max_size = $6 
+}
+endsnippet
+
 snippet resource_aws_sg
 resource "aws_security_group" "$1" {
 	provider = aws.${2:alias}
@@ -230,7 +323,7 @@ snippet resource_aws_eip
 endsnippet
 
 snippet resource_aws_key_pair
-	resource "aws_key_pair" "${1:name}" {
+resource "aws_key_pair" "${1:name}" {
 	provider = aws.${2:alias}
 	key_name = "${3:$1}"
 	public_key = "${4:public_key}"
@@ -238,7 +331,7 @@ snippet resource_aws_key_pair
 endsnippet
 
 snippet resource_aws_security_group
-	resource "aws_security_group" "${1:name}" {
+resource "aws_security_group" "${1:name}" {
 	provider = aws.${2:alias}
 	name = "${3:$1}"
 	description = "${4:desc}"
